@@ -2,8 +2,8 @@ from dataclasses import dataclass
 
 @dataclass
 class Tag :
-    length : int
     pos : int
+    length : int
     next_symbol : str
 
 
@@ -41,8 +41,9 @@ def LZ77_compression(word) :
 
         if longest_len > 0:
             if i + longest_len < len(word):
+                nxt_sym = word[i + longest_len]
+            else :
                 nxt_sym = ""  
-            nxt_sym = word[i + longest_len]
 
             tags.append(Tag(longest_pos , longest_len , nxt_sym))
             i+=longest_len + 1
@@ -53,18 +54,40 @@ def LZ77_compression(word) :
     return tags
 
 
-def decompression() :
-    return 
+def decompression(tags) :
+    original = ""
+    i = 0
+    for tag in tags :
+        pos = tag.pos
+        length = tag.length
+        nxt_sym = tag.next_symbol
+
+        if pos > 0 :
+            j = i - pos
+
+            for k in range (length):
+                original+=original[j+k]
+            i+=length
+
+        original+=nxt_sym
+        i+=1
+
+    return original    
+
 
 
 def main() :
-    #s = input("Enter a string to compress using LZ77:")
-    s = "ABAABABAABBBBBBBBBBBBA"
-    # ABAABABAABBBBBBBBBBBBA
-    compress = LZ77_compression(s)
-    for c in compress:
+    s = input("Enter a string to compress using LZ77:")
+    #s = "ABAABABAABBBBBBBBBBBBA"
+
+    compress_tags = LZ77_compression(s)
+    for c in compress_tags:
         print(c)
 
+    decompressed_string = decompression(compress_tags)
+    print(decompressed_string)
+
+    print(decompressed_string == s)
 
 if __name__ == "__main__":
     main()
