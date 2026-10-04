@@ -55,7 +55,7 @@ def LZ77_compression(word) :
 
 
 def decompression(tags) :
-    original = ""
+    original = []
     i = 0
     for tag in tags :
         pos = tag.pos
@@ -66,13 +66,13 @@ def decompression(tags) :
             j = i - pos
 
             for k in range (length):
-                original+=original[j+k]
+                original.append(original[j + k])
             i+=length
 
-        original+=nxt_sym
+        original.append(nxt_sym)
         i+=1
 
-    return original    
+    return "".join(original)    
 
 
 
