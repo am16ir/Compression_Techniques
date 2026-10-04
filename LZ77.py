@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-
+import math
 @dataclass
 class Tag :
     pos : int
@@ -74,6 +74,23 @@ def decompression(tags) :
 
     return "".join(original)    
 
+def get_tags_size(tags):
+    max_pos = 1
+    max_length = 1
+    
+    for tag in tags:
+        
+        if tag.pos > max_pos:
+            max_pos = tag.pos
+        
+        if tag.length > max_length:
+            max_length = tag.length
+            
+    pos_bits = math.ceil(math.log2(max_pos + 1))
+    length_bits = math.ceil(math.log2(max_length + 1))
+    
+    return (pos_bits + length_bits + 8) * len(tags)
+    
 
 
 def main() :
