@@ -91,7 +91,8 @@ def get_tags_size(tags):
     
     return (pos_bits + length_bits + 8) * len(tags)
     
-
+def get_text_size(text):
+    return len(text) * 8
 
 def main() :
     s = input("Enter a string to compress using LZ77:")
@@ -104,7 +105,12 @@ def main() :
     decompressed_string = decompression(compress_tags)
     print(decompressed_string)
 
-    print(decompressed_string == s)
+    if decompressed_string == s:
+        print("Compressed & decompressed successfully")
+        original_size = get_text_size(s)
+        compressed_size = get_tags_size(compress_tags)
+        print(f"Compression Ratio: {round(compressed_size / original_size, 3)}")
+
 
 if __name__ == "__main__":
     main()
