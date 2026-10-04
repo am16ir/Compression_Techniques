@@ -7,10 +7,7 @@ class Tag :
     next_symbol : str
 
 
-
-def LZ77_compression(word) :
-    search_window = 12
-    look_ahead = 11
+def compress_lz77(word, search_window = 12, lookahead_window = 11) :
     tags = []
     i = 0
 
@@ -26,7 +23,7 @@ def LZ77_compression(word) :
             if word[j] == word[i]:
                 cnt = 1
 
-                while (cnt < look_ahead) and (cnt + i < len(word)) and (cnt + j < len(word)):
+                while (cnt < lookahead_window) and (cnt + i < len(word)) and (cnt + j < len(word)):
                     if word[j + cnt] == word[cnt + i] :
                         cnt+=1
                     else :
@@ -53,8 +50,7 @@ def LZ77_compression(word) :
         
     return tags
 
-
-def decompression(tags) :
+def decompress_lz77(tags) :
     original = []
     i = 0
     for tag in tags :
@@ -98,11 +94,11 @@ def main() :
     s = input("Enter a string to compress using LZ77:")
     #s = "ABAABABAABBBBBBBBBBBBA"
 
-    compress_tags = LZ77_compression(s)
+    compress_tags = compress_lz77(s, 15, 15)
     for c in compress_tags:
         print(c)
 
-    decompressed_string = decompression(compress_tags)
+    decompressed_string = decompress_lz77(compress_tags)
     print(decompressed_string)
 
     if decompressed_string == s:
@@ -110,7 +106,6 @@ def main() :
         original_size = get_text_size(s)
         compressed_size = get_tags_size(compress_tags)
         print(f"Compression Ratio: {round(compressed_size / original_size, 3)}")
-
 
 if __name__ == "__main__":
     main()
