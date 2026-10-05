@@ -90,22 +90,59 @@ def get_tags_size(tags):
 def get_text_size(text):
     return len(text) * 8
 
+def process_text(text, search_window, lookahead_window):
+    compression_tags = compress_lz77(text, search_window, lookahead_window)
+    decompressed = decompress_lz77(compression_tags)
+    if text == decompressed:
+        print("Text compressed successfully")
+        
+        text_size = get_text_size(text)
+        compressed_size = get_tags_size(compression_tags)
+        compression_ratio = round(compressed_size / text_size, 3)
+        
+        print(f"Size before: {text_size} bits.")
+        print(f"Size after: {compressed_size} bits.")
+        print(f"Compression ratio: {compression_ratio}.")
+
+    else:
+        print("A problem occurred and the decompressed text don't match the original text")
+
 def main() :
-    s = input("Enter a string to compress using LZ77:")
-    #s = "ABAABABAABBBBBBBBBBBBA"
-
-    compress_tags = compress_lz77(s, 15, 15)
-    for c in compress_tags:
-        print(c)
-
-    decompressed_string = decompress_lz77(compress_tags)
-    print(decompressed_string)
-
-    if decompressed_string == s:
-        print("Compressed & decompressed successfully")
-        original_size = get_text_size(s)
-        compressed_size = get_tags_size(compress_tags)
-        print(f"Compression Ratio: {round(compressed_size / original_size, 3)}")
+    search_window = 12
+    lookahead_window = 11
+    while True:
+        print("#" * 30)
+        print("Application Menu")
+        print(f"Current search window length: {search_window}")
+        print(f"Current lookahead window length: {lookahead_window}")
+        print("1- Enter text.")
+        print("2- Change search window length.")
+        print("3- Change lookahed window length.")
+        print("0- Exit.")
+        print("#" * 30)
+        choice = int(input())
+        match choice:
+            case 1:
+                text = input("Enter your text: ")
+                process_text(text, search_window, lookahead_window)
+            case 2:
+                new_length = int(input("Enter the new length: "))
+                if new_length > 0 :
+                    search_window = new_length
+                    print("Search window updated successfully")
+                else:
+                    print("Invalid length")
+            case 3:
+                new_length = int(input("Enter the new length: "))
+                if new_length > 0 :
+                    lookahead_window = new_length
+                    print("Lookahead window updated successfully")
+                else:
+                    print("Invalid length")
+            case 0:
+                exit(0)
+            case _:
+                print("Invalid choice.")
 
 if __name__ == "__main__":
     main()
