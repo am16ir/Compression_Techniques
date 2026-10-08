@@ -90,7 +90,7 @@ def get_tags_size(tags):
 def get_text_size(text):
     return len(text) * 8
 
-def process_text(text, search_window, lookahead_window):
+def process_text(text, search_window, lookahead_window , flag):
     compression_tags = compress_lz77(text, search_window, lookahead_window)
     decompressed = decompress_lz77(compression_tags)
     if text == decompressed:
@@ -102,7 +102,11 @@ def process_text(text, search_window, lookahead_window):
         
         print(f"Size before: {text_size} bits.")
         print(f"Size after: {compressed_size} bits.")
-        print(f"Compression ratio: {compression_ratio}.")
+        print(f"Compression ratio: {compression_ratio}")
+        if flag :
+            print(f"Compressed Tags: ")
+            for tag in compression_tags :
+                print(tag)
 
     else:
         print("A problem occurred and the decompressed text don't match the original text")
@@ -124,7 +128,10 @@ def main() :
         match choice:
             case 1:
                 text = input("Enter your text: ")
-                process_text(text, search_window, lookahead_window)
+                chr = input("Do you want to display compressed tags? y/n\n")
+                flag = (chr == "y")
+                process_text(text, search_window, lookahead_window , flag)
+
             case 2:
                 new_length = int(input("Enter the new length: "))
                 if new_length > 0 :
@@ -146,3 +153,5 @@ def main() :
 
 if __name__ == "__main__":
     main()
+
+    
