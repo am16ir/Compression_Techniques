@@ -152,6 +152,8 @@ def main() :
         match choice:
             case 1:
                 text = read_text()
+                if text == None or text == "":
+                    continue
                 chr = input("Do you want to display compressed tags? y/n\n")
                 flag = (chr == "y")
                 process_text(text, search_window, lookahead_window , flag)
