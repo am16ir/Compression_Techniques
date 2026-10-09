@@ -111,6 +111,30 @@ def process_text(text, search_window, lookahead_window , flag):
     else:
         print("A problem occurred and the decompressed text don't match the original text")
 
+def read_text():
+    print("Choose the text source:")
+    print("1- Keyboard.")
+    print("2- File.")
+    choice = int(input())
+    text = None
+    if choice == 1:
+        text = input("Enter the text: ")
+    elif choice == 2:
+        path = input("Enter file path: ")
+        text = get_file_contents(path)
+    else:
+        print("Invalid choice")
+    return text
+    
+def get_file_contents(path):
+    content = None
+    try:
+        with open(path, "r") as file:
+            content = file.read()
+    except FileNotFoundError:
+        print("Error: the specified file does not exist")
+    return content
+
 def main() :
     search_window = 12
     lookahead_window = 11
@@ -127,7 +151,9 @@ def main() :
         choice = int(input())
         match choice:
             case 1:
-                text = input("Enter your text: ")
+                text = read_text()
+                if text == None or text == "":
+                    continue
                 chr = input("Do you want to display compressed tags? y/n\n")
                 flag = (chr == "y")
                 process_text(text, search_window, lookahead_window , flag)
