@@ -12,7 +12,7 @@ class Node:
 
 def get_probability(msg , limit):
     freq = {}
-
+    #calc freq of each letter then probability
     for c in msg:
         if c in freq:
             freq[c] += 1
@@ -23,18 +23,27 @@ def get_probability(msg , limit):
     for p in freq :
         prob[p] = freq[p]/len(msg)
 
+    vlc_codes = {}
+    others_count = 0
     new_prob = {}
     new_prob["OTHERS"] = 0
+
     for char,p in prob.items():
         if  p < limit:
             new_prob["OTHERS"] += p
+            vlc_codes[char] = others_count
+            others_count += 1
         else :
             new_prob[char] = p
 
     if new_prob["OTHERS"] == 0 :
         del new_prob["OTHERS"]
+        bits_needed = 0
+    else :
+        bits_needed = ceil(log2(others_count))
 
-    return new_prob
+
+    return new_prob , vlc_codes , bits_needed
 
 
 
@@ -49,9 +58,9 @@ def assign_huffman_code(node , current_code , table):
 
 
 
-def compress(msg):
+def compress(msg = "AAABCCBCBACBCABCAABBCCA"):
     limit = float(input("Enter The Minimum Limit of Symbol Probability: "))
-    probabilities = get_probability(msg , limit)
+    probabilities , vlc_codes , bits_needed = get_probability(msg , limit)
 
     pq = []
     for p in probabilities:
@@ -71,10 +80,22 @@ def compress(msg):
     table_of_codes = {}
     assign_huffman_code(root , "" , table_of_codes)
 
+    # if msg has only 1 letter
+    if len(table_of_codes) == 1:
+        char = list(table_of_codes.keys())[0]
+        table_of_codes[char] = "0"
+
     compressed_stream = []
-    # i forget the others group we must send the vlc code first
     for char in msg:
-        compressed_stream.append(table_of_codes[char])
+        if char in table_of_codes:
+            compressed_stream.append(table_of_codes[char])
+        else :
+            # others group
+            compressed_stream.append(table_of_codes["OTHERS"])
+
+            index = vlc_codes[char]
+            vlc_binary = f"{index:0{bits_needed}b}"
+            compressed_stream.append(vlc_binary)
 
     compressed_stream = "".join(compressed_stream)
 
@@ -91,4 +112,38 @@ def compress(msg):
         byte = byte_value.to_bytes(1, byteorder='big')
         byte_list.append(byte)
 
-    print("The compressed stream is:",compressed_stream)
+    #writing the file -> header is text and compressed stream is binary
+    #The header format is:
+    # Line 1: total_bits
+    # Line 2: bits_needed
+    # Line 3: number of entries in Huffman table
+    # Next N lines: character:code pairs
+    # Next line: number of entries in VLC table
+    # Next M lines: character:index pairs
+    # Then: the binary compressed data
+
+    with open("compressed.bin", "wb") as f:
+        header = f"{total_bits}\n"
+        header += f"{bits_needed}\n"
+        header += f"{len(table_of_codes)}\n"
+
+        #repr char fixes if the msg has a \n making it '\n'
+        for char, code in table_of_codes.items():
+            header += f"{repr(char)}:{code}\n"
+
+
+        header += f"{len(vlc_codes)}\n"
+        for char, index in vlc_codes.items():
+            header += f"{repr(char)}:{index}\n"
+
+
+        f.write(header.encode())
+
+
+        for byte in byte_list:
+            f.write(byte)
+
+    print("Compression complete! File saved as compressed.bin")
+
+if __name__ == "__main__":
+    compress()
