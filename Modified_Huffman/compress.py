@@ -147,3 +147,4 @@ def compress(msg = "AAABCCBCBACBCABCAABBCCA"):
 
 if __name__ == "__main__":
     compress()
+
