@@ -20,7 +20,16 @@ if __name__ == "__main__":
         choice = input("Choose an option: ").strip()
 
         if choice == "2":
-            print("\nDecompression is not implemented yet.")
+            OUTPUT_DIR = os.path.join(BASE_DIR, "output")
+
+            codebook_path = os.path.join(OUTPUT_DIR, "codebook.npz")
+            compressed_path = os.path.join(OUTPUT_DIR, "compressed.bin")
+            out_path = os.path.join(OUTPUT_DIR, "decompressed.png")
+
+            decompress(codebook_path, compressed_path, out_path)
+
+            print("\nDecompression completed successfully!")
+            print(f"Output file: {out_path}")
         elif choice != "1":
             raise ValueError("Please choose 1 or 2.")
         else:

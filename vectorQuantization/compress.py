@@ -1,8 +1,8 @@
-
 import os
 import math
 import numpy as np
 from PIL import Image
+from decompress import decompress
 
 
 def assign_vectors(X, codebook):
@@ -196,14 +196,14 @@ def compress(
         else 0
     )
 
-    print("\n========== Compression Results ==========")
+    print("\nCompression results:")
     print(f"Original image size: {original_size} bytes")
     print(f"Number of blocks: {n_blocks}")
     print(f"Codebook size: {codebook_size} bytes")
     print(f"Compressed stream size: {compressed_size} bytes")
     print(f"Total compressed size: {total_compressed_size} bytes")
     print(f"Compression ratio: {compression_ratio:.4f}:1")
-    print("=========================================")
+    print("")
 
     return compression_ratio
 
