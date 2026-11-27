@@ -5,6 +5,7 @@
 import os
 import compress
 import numpy as np
+from decompress import decompress
 
 if __name__ == "__main__":
 
