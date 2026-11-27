@@ -7,16 +7,9 @@ from decompress import decompress
 
 def assign_vectors(X, codebook):
     labels = []
-    for vector in X :
-        min_dist = float("inf")
-        best_index = 0
-
-        for i in range (len(codebook)):
-            distance = calculate_distance(vector , codebook[i])
-            if distance < min_dist :
-                min_dist = distance
-                best_index = i
-        labels.append(best_index)
+    for vector in X:
+        distances = np.sum(np.abs(codebook - vector), axis=1)
+        labels.append(np.argmin(distances))
 
     return np.array(labels)
     
