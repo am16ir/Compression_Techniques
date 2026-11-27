@@ -5,146 +5,89 @@ import numpy as np
 from PIL import Image
 
 
-# ==========================================
-# 1. Assign each vector to nearest codeword
-# ==========================================
+def assign_vectors(X, codebook):
+    labels = []
+    for vector in X :
+        min_dist = float("inf")
+        best_index = 0
 
-def assign_vectors(X, codebook, batch_size=8192):
-    labels = np.empty(len(X), dtype=np.int32)
-    errors = np.empty(len(X), dtype=np.float64)
+        for i in range (len(codebook)):
+            distance = calculate_distance(vector , codebook[i])
+            if distance < min_dist :
+                min_dist = distance
+                best_index = i
+        labels.append(best_index)
 
-    codebook_norms = np.sum(codebook ** 2, axis=1)
+    return np.array(labels)
+    
 
-    for start in range(0, len(X), batch_size):
-        end = min(start + batch_size, len(X))
-        batch = X[start:end]
+def calculate_distance(vector1, vector2):
+    distance = 0
 
-        distances = (
-            np.sum(batch ** 2, axis=1, keepdims=True)
-            + codebook_norms[None, :]
-            - 2 * batch @ codebook.T
-        )
+    for i in range(len(vector1)):
+        distance += abs(vector1[i] - vector2[i])
 
-        np.maximum(distances, 0, out=distances)
+    return distance
 
-        batch_labels = np.argmin(distances, axis=1)
+def refine_codebook(X, codebook):
+    while True:
+        labels = assign_vectors(X, codebook)
 
-        labels[start:end] = batch_labels
-        errors[start:end] = distances[
-            np.arange(len(batch)), batch_labels
-        ]
-
-    return labels, errors
-
-
-# ==========================================
-# 2. Refine codebook using LBG
-# ==========================================
-
-def refine_codebook(X, codebook, max_iter=100, tolerance=0.001):
-
-    codebook = codebook.copy()
-
-    for _ in range(max_iter):
-
-        labels, errors = assign_vectors(X, codebook)
-
-        new_codebook = codebook.copy()
+        new_codebook = []
 
         for i in range(len(codebook)):
-
             cluster = X[labels == i]
 
-            if len(cluster) > 0:
-                new_codebook[i] = np.mean(cluster, axis=0)
+            if len(cluster) == 0:
+                new_codebook.append(codebook[i])
+            else:
+                new_centroid = np.mean(cluster, axis=0)
+                new_codebook.append(new_centroid)
 
-        # Handle empty clusters
-        empty_clusters = np.where(
-            np.bincount(labels, minlength=len(codebook)) == 0
-        )[0]
+        new_codebook = np.array(new_codebook)
 
-        if len(empty_clusters) > 0:
-
-            worst_indices = np.argsort(errors)[::-1]
-            used_indices = set()
-
-            for cluster_index in empty_clusters:
-
-                for sample_index in worst_indices:
-                    if int(sample_index) not in used_indices:
-                        new_codebook[cluster_index] = X[sample_index]
-                        used_indices.add(int(sample_index))
-                        break
-
-        difference = np.max(np.abs(new_codebook - codebook))
+        if np.allclose(codebook, new_codebook):
+            break
 
         codebook = new_codebook
-
-        if difference < tolerance:
-            break
 
     return codebook
 
 
-# ==========================================
-# 3. Build Codebook using LBG algorithm
-# ==========================================
 
-def build_codebook(X, K, epsilon=0.01):
+def build_codebook(X, K):
 
     if K < 1:
         raise ValueError("K must be at least 1.")
+
+    if K & (K - 1) != 0:
+        raise ValueError("K must be a power of 2.")
 
     if K > len(X):
         raise ValueError(
             "K cannot be greater than the number of image blocks."
         )
 
-    # Start with one centroid: the mean of all vectors
-    codebook = np.mean(X, axis=0, keepdims=True)
+    codebook = np.array([np.mean(X, axis=0)])
 
-    # Small perturbation for splitting
-    delta = epsilon * np.std(X, axis=0)
-    delta = np.maximum(delta, epsilon)
-
-    # Split until we reach K codewords
     while len(codebook) < K:
 
-        labels, errors = assign_vectors(X, codebook)
+        new_codebook = []
 
-        # Calculate distortion for each cluster
-        distortions = np.bincount(
-            labels,
-            weights=errors,
-            minlength=len(codebook)
-        )
+        for centroid in codebook:
+            centroid1 = np.round(centroid - 0.5)
+            centroid2 = np.round(centroid + 0.5)
 
-        # Select the cluster with highest distortion
-        split_index = np.argmax(distortions)
+            new_codebook.append(centroid1)
+            new_codebook.append(centroid2)
 
-        old_centroid = codebook[split_index]
+        codebook = np.array(new_codebook)
 
-        # Split centroid into two
-        centroid_1 = old_centroid + delta
-        centroid_2 = old_centroid - delta
-
-        # Replace selected centroid and add the second one
-        codebook[split_index] = centroid_1
-
-        codebook = np.vstack([
-            codebook,
-            centroid_2
-        ])
-
-        # Refine the codebook
+        
         codebook = refine_codebook(X, codebook)
 
     return codebook
 
-
-# ==========================================
-# 4. Compression
-# ==========================================
 
 def compress(
     image_path,
@@ -161,6 +104,9 @@ def compress(
     if K < 1:
         raise ValueError("K must be at least 1.")
 
+    if K & (K - 1) != 0:
+        raise ValueError("K must be a power of 2.")
+
     image = Image.open(image_path).convert("L")
     image = np.array(image, dtype=np.uint8)
     H, W = image.shape
@@ -176,16 +122,17 @@ def compress(
 
     padded_h, padded_w = padded_image.shape
 
-    # Extract blocks in row-major order
-    blocks = (
-        padded_image
-        .reshape(padded_h // bh, bh, padded_w // bw, bw)
-        .transpose(0, 2, 1, 3)
-        .reshape(-1, bh * bw)
-    )
 
-    # Convert blocks to float for calculations
-    X = blocks.astype(np.float64)
+
+    blocks = []
+    for i in range(0, padded_h, bh):
+        for j in range(0, padded_w, bw):
+
+            block = padded_image[i:i+bh, j:j+bw]
+
+            blocks.append(block.flatten())
+
+    X = np.array(blocks, dtype=np.float64)
 
     n_blocks = len(X)
 
@@ -196,25 +143,19 @@ def compress(
 
     print("\nBuilding codebook using LBG...")
 
-    # Build codebook
     codebook = build_codebook(X, K)
 
-    # Convert codebook to uint8
     codebook = np.clip(
         np.rint(codebook),
         0,
         255
     ).astype(np.uint8)
 
-    # Assign blocks using the final uint8 codebook
-    labels, _ = assign_vectors(
+    labels = assign_vectors(
         X,
         codebook.astype(np.float64)
     )
 
-    # ======================================
-    # Save codebook
-    # ======================================
 
     codebook = codebook.reshape(K, bh, bw)
 
@@ -223,13 +164,11 @@ def compress(
             f,
             codebook=codebook,
             orig_h=H,
-            orig_w=W
+            orig_w=W,
+            bh=bh,
+            bw=bw
         )
 
-    # ======================================
-    # Pack labels into binary stream
-    # MSB first, last byte zero-padded
-    # ======================================
 
     b = max(1, math.ceil(math.log2(K)))
 
@@ -243,9 +182,6 @@ def compress(
     with open(compressed_path, "wb") as f:
         f.write(packed_bits.tobytes())
 
-    # ======================================
-    # Calculate compression ratio
-    # ======================================
 
     original_size = H * W
 
